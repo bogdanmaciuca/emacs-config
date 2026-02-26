@@ -21,6 +21,8 @@
 ;; Autosave
 (auto-save-visited-mode 1)
 (setq auto-save-visited-interval 1)
+;; No bell
+(setq ring-bell-function 'ignore)
 
 					; Packages
 ;; Theme
@@ -47,18 +49,56 @@
   :bind (:map markdown-mode-map
               ("C-c C-e" . markdown-do)))
 
-;; LaTeX
-(use-package auctex
-  :ensure t
-  :init (setq +latex-viewers '(pdf-tools)))
+					; Utility functions
+(defun newline-above ()
+  (interactive)
+  (beginning-of-line)
+  (newline)
+  (previous-line))
+
+(defun newline-below ()
+  (interactive)
+  (end-of-line)
+  (newline))
 
 					; Keybindings
 ;; Find init.el
 (keymap-global-set "C-x c" (lambda () (interactive) (find-file "~/.emacs.d/init.el")))
+;; Moving the cursor
+(keymap-global-set "M-h" 'left-char)
+(keymap-global-set "M-j" 'next-line)
+(keymap-global-set "M-k" 'previous-line)
+(keymap-global-set "M-l" 'right-char)
+;; Start/end of line
+(keymap-global-set "M-H" 'beginning-of-line)
+(keymap-global-set "M-J" 'forward-paragraph)
+(keymap-global-set "M-K" 'backward-paragraph)
+(keymap-global-set "M-L" 'end-of-line)
+;; Word forward
+(keymap-global-set "M-w" 'forward-word)
 ;; Undo/Redo
 (keymap-global-set "C-z" 'undo-fu-only-undo)
 (keymap-global-set "C-S-z" 'undo-fu-only-redo)
-
+;; Splits
+(keymap-global-set "M-+" 'split-window-horizontally)
+(keymap-global-set "M-_" 'split-window-vertically)
+;; Navigating windows
+(keymap-global-set "C-h" 'windmove-left)
+(keymap-global-set "C-j" 'windmove-down)
+(keymap-global-set "C-k" 'windmove-up)
+(keymap-global-set "C-l" 'windmove-right)
+;; Window shit
+(define-prefix-command 'window-map)
+(keymap-global-set "C-w" 'window-map)
+(define-key window-map (kbd "C-w") 'delete-other-windows)
+;; Selection
+(keymap-global-set "C-v" 'set-mark-command)
+;; New line above/below
+(keymap-global-set "M-O" 'newline-above)
+(keymap-global-set "M-o" 'newline-below)
+;; Yank/Paste
+(keymap-global-set "C-y" 'kill-ring-save)
+(keymap-global-set "C-p" 'yank)
 					; Don't touch
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
