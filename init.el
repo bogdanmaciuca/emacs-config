@@ -1,3 +1,10 @@
+;; TODO:
+;; - toggle-term
+;; - smart-beginning of line
+;; - delete word in minibuffer
+;; - word separators for word forward/backward
+;; - hook for exiting region (pulse)
+
 					; MELPA
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -13,23 +20,25 @@
 ;; Navigating between windows
 (windmove-default-keybindings)
 ;; No backup files
-(setq make-backup-files nil)
+(setq-default make-backup-files nil)
 ;; Start in fullscreen
 (push '(fullscreen . maximized) default-frame-alist)
 ;; Disable welcome scren
-(setq inhibit-startup-screen t)
+(setq-default inhibit-startup-screen t)
 ;; Autosave
 (auto-save-visited-mode 1)
-(setq auto-save-visited-interval 1)
+(setq-default auto-save-visited-interval 1)
 ;; No bell
-(setq ring-bell-function 'ignore)
+(setq-default ring-bell-function 'ignore)
 ;; delete-region
 (delete-selection-mode t)
 ;; Tab for autocomplete mini-buffer
-(setq tab-always-indent 'complete)
+(setq-default tab-always-indent 'complete)
 ;; icomplete
 (icomplete-mode t)
 (icomplete-vertical-mode t)
+;; No wrap
+(setq-default truncate-lines t)
 
 					; Packages
 ;; Theme
@@ -44,27 +53,16 @@
   :config
   (super-save-mode +1))
 
-;; Undo
-(use-package undo-fu
-  :ensure t)
-
-;; Markdown
-(use-package markdown-mode
-  :ensure t
-  :mode ("README\\.md\\'" . gfm-mode)
-  :init (setq markdown-command "multimarkdown")
-  :bind (:map markdown-mode-map
-              ("C-c C-e" . markdown-do)))
-
-
 					; Utility functions
 (defun newline-above ()
+  "Vim O"
   (interactive)
   (beginning-of-line)
   (newline)
   (previous-line))
 
 (defun newline-below ()
+  "Vim o"
   (interactive)
   (end-of-line)
   (newline))
@@ -84,18 +82,38 @@
   (beginning-of-line))
 
 (defun one-char-search-forward ()
+  "Vim f"
   (interactive)
   (message "Waiting or a key...")
   (let ((key (read-char)))
     (search-forward (byte-to-string key))))
 
 (defun one-char-search-backward ()
+  "Vim F"
   (interactive)
   (message "Waiting or a key...")
   (let ((key (read-char)))
     (search-backward (byte-to-string key))))
-  
-  
+
+(defun comment-line-or-selection ()
+  "(Un)Comments the active region if it exists. Otherwise (un)comments the current line"
+  (interactive)
+  (if (not (region-active-p))
+      (select-inside-line))
+  (comment-or-uncomment-region (region-beginning) (region-end)))
+
+(defun toggle-term ()
+  (interactive))
+
+(defun smart-beginning-of-line ()
+  "Moves the cursor to the beginning of the text.
+If alreadythere, at the beginning of the line"
+  (interactive)
+  (let ((old-point (point)))
+    (back-to-indentation)
+    (if (eq old-point (point))
+	(beginning-of-line))))
+
 					; Keybindings
 ;; Find init.el
 (keymap-global-set "C-x c" (lambda () (interactive) (find-file "~/.emacs.d/init.el")))
@@ -105,7 +123,7 @@
 (keymap-global-set "M-k" 'previous-line)
 (keymap-global-set "M-l" 'right-char)
 ;; Start/end of line
-(keymap-global-set "M-H" 'beginning-of-line)
+(keymap-global-set "M-H" 'smart-beginning-of-line)
 (keymap-global-set "M-J" 'forward-paragraph)
 (keymap-global-set "M-K" 'backward-paragraph)
 (keymap-global-set "M-L" 'end-of-line)
@@ -115,11 +133,11 @@
 (keymap-global-set "C-M-j" 'scroll-up-half-page)
 (keymap-global-set "C-M-k" 'scroll-down-half-page)
 ;; Undo/Redo
-(keymap-global-set "C-z" 'undo-fu-only-undo)
-(keymap-global-set "C-S-z" 'undo-fu-only-redo)
+(keymap-global-set "C-u" 'undo-only)
+(keymap-global-set "C-r" 'undo-redo)
 ;; Splits
-(keymap-global-set "M-+" 'split-window-horizontally)
-(keymap-global-set "M-_" 'split-window-vertically)
+(keymap-global-set "M-+" (lambda () (interactive) (split-window-horizontally) (windmove-right)))
+(keymap-global-set "M-_" (lambda () (interactive) (split-window-vertically) (windmove-down)))
 ;; Window shit
 (define-prefix-command 'window-map)
 (keymap-global-set "C-w" 'window-map)
@@ -148,26 +166,48 @@
 (define-key marking (kbd "p") 'mark-paragraph)
 ;; Searching
 (keymap-global-set "C-f" 'isearch-forward)
-(keymap-global-set "C-t" 'isearch-backward)
+(keymap-global-set "C-S-f" 'isearch-backward)
 (define-key isearch-mode-map (kbd "<return>") 'isearch-repeat-forward)
 (define-key isearch-mode-map (kbd "S-<return>") 'isearch-repeat-backward)
 (define-key isearch-mode-map (kbd "<escape>") 'isearch-exit)
 ;; One-character searching
 (keymap-global-set "M-f" 'one-char-search-forward)
-(keymap-global-set "M-t" 'one-char-search-backward)
+(keymap-global-set "M-F" 'one-char-search-backward)
 ;; icomplete
 (define-key icomplete-minibuffer-map (kbd "<tab>") 'icomplete-forward-completions)
 (define-key icomplete-minibuffer-map (kbd "<backtab>") 'icomplete-backward-completions)
 (define-key icomplete-minibuffer-map (kbd "RET") (lambda () (interactive) (icomplete-force-complete) (icomplete-ret)))
 ;; Join line
-(keymap-global-set "C-j" (lambda () (interactive) (previous-line) (join-line)))
+(keymap-global-set "C-j" (lambda () (interactive) (next-line) (join-line)))
+;; Comment region
+(keymap-global-set "C-/" 'comment-line-or-selection)
+;; Terminal
+(keymap-global-set "C-`" 'toggle-term)
 
 					; Misc
-(defun pulse-current-region (&rest _)
-  (if mark-active
-      (pulse-momentary-highlight-region (region-beginning) (region-end))))
+;; Pulse after mark is deactivated
+(add-hook
+ 'deactivate-mark-hook
+ (lambda () (pulse-momentary-highlight-region (region-beginning) (region-end))))
 
-(advice-add #'kill-ring-save :before #'pulse-current-region)
+;; Modeline
+(defun my-modified-status ()
+  "Returns Saved or Not saved"
+  (if (buffer-modified-p)
+      (propertize "Not saved" 'face '(:weight bold))
+    "Saved    "))
+
+(defun my-buffer-name ()
+  "Returns the buffer name, but with `propertize`"
+  (propertize (buffer-name) 'face '(:foreground "#c397d8")))
+
+(setq-default mode-line-format
+      (list
+       " "
+       '(:eval (my-modified-status))
+       " | "
+       '(:eval (my-buffer-name))))
+
 
 					; Don't touch
 (custom-set-variables
