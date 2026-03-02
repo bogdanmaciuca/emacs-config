@@ -4,3 +4,6 @@ elpa/
 projects
 recentf
 eshell/
+init-backup.txt
+init-org.el
+init.md
