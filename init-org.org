@@ -1,41 +1,49 @@
 #-*- mode: org -*-
-#+STARTUP: showall
+#+STARTUP: content
 
-* My Emacs Config
+* TODO
+- make <return> work when there is no completion candidate
+- no line numbers in terminal
+- forward-word etc functions
+- go back to mark
+- org keymaps for begin's, headings etc
+- resizable fonts in org
+- better scroll-half-page
+- dired shortcuts
+- {C-<tab>} for cycling buffers + showing all buffer orders for a window in the modeline or something
+- selecting whole buffer
 
-** Options & minor modes
-
-*** General
-
-**** Disabling GUI elements
+* Options & minor modes
+** General
+*** Disabling GUI elements
 #+begin_src elisp
   (menu-bar-mode 0)
   (tool-bar-mode -1)
   (scroll-bar-mode 0)
 #+end_src
 
-**** Disable backup files
+*** Disable backup files
 #+begin_src elisp
   (setq-default make-backup-files nil)
 #+end_src
 
-**** Disable bell
+*** Disable bell
 #+begin_src elisp
   (setq-default ring-bell-function 'ignore)
 #+end_src
 
-**** Disable wrap
+*** Disable wrap
 #+begin_src elisp
   (setq-default truncate-lines t)
 #+end_src
 
-**** Font
+*** Font
 #+begin_src elisp
   (set-face-attribute 'default nil :font "SFMono Nerd Font-10")
   (add-to-list 'default-frame-alist '(font . "SFMono Nerd Font-10"))
 #+end_src
 
-**** Delete selection
+*** Delete selection
 #+begin_quote
 When Delete Selection mode is enabled, typed text replaces the selection
 if the selection is active. Otherwise, typed text is just inserted at
@@ -45,26 +53,26 @@ point regardless of any selection.
   (delete-selection-mode t)
 #+end_src
 
-**** Completion
+*** Completion
 #+begin_src elisp
   (setq-default tab-always-indent 'complete)
   (fido-mode t)
   (fido-vertical-mode t)
 #+end_src
 
-**** Line numbers
+*** Line numbers
 #+begin_src elisp
   (global-display-line-numbers-mode 1)
 #+end_src
 
-**** Pulse region when deactivated
+*** Pulse region when deactivated
 #+begin_src elisp
   (add-hook
    'deactivate-mark-hook
    (lambda () (pulse-momentary-highlight-region (region-beginning) (region-end))))
 #+end_src
 
-**** Modeline
+*** Modeline
 #+begin_src elisp
   ;; Modeline
   (defun my-modified-status ()
@@ -78,30 +86,62 @@ point regardless of any selection.
     (propertize (buffer-name) 'face '(:foreground "#c397d8")))
 
   (setq-default mode-line-format
-  	      (list
-  	       " "
-  	       '(:eval (my-modified-status))
-  	       " | "
-  	       '(:eval (my-buffer-name))))
+                (list
+                 " "
+                 '(:eval (my-modified-status))
+                 " | "
+                 '(:eval (my-buffer-name))))
 
 #+end_src
 
-
-*** Org-mode
+** Org-mode
+    
+*** Headings
+Give each heading a shade of grey, based on importance.
 #+begin_src elisp
-  (setq-default org-statup-indented t)
+  (defun set-org-heading-fonts ()
+    (set-face-attribute 'org-level-1 nil :font "DejaVu Serif-28" :weight 'semi-bold :foreground "#ffffff")
+    (set-face-attribute 'org-level-2 nil :font "DejaVu Serif-23" :weight 'semi-bold :foreground "#dddddd")
+    (set-face-attribute 'org-level-3 nil :font "DejaVu Serif-18" :weight 'semi-bold :foreground "#bbbbbb")
+    (set-face-attribute 'org-level-4 nil :font "DejaVu Serif-13" :weight 'semi-bold :foreground "#999999"))
 #+end_src
 
+*** Other fonts
+#+begin_src elisp
+  (defun set-other-org-fonts ()
+    (set-face-attribute 'variable-pitch nil :font "DejaVu Serif-10")
+    (set-face-attribute 'org-block nil :font "SFMono Nerd Font-10")
+    (set-face-attribute 'org-meta-line nil :font "SFMono Nerd Font-8")
+    (set-face-attribute 'org-hide nil :inherit 'fixed-pitch))
+#+end_src
 
-** Plugins
+*** Indentation
+#+begin_src elisp
+  (setq org-adapt-indentation t)
+  (setq org-indent-indentation-per-level 2)
+#+end_src
+*** Org hook
+#+begin_src elisp
+  (add-hook
+   'org-mode-hook
+   (lambda ()
+     (display-line-numbers-mode 0)
+     (org-num-mode t)
+     (variable-pitch-mode t)
+     (org-indent-mode t)
+     (set-org-heading-fonts)
+     (set-other-org-fonts)))
+#+end_src
 
-**** MELPA
+* Plugins
+
+** MELPA
 #+begin_src elisp
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 #+end_src
 
-**** Theme
+** Theme
 #+begin_src elisp
   (use-package afternoon-theme
     :ensure t
@@ -109,7 +149,7 @@ point regardless of any selection.
     (load-theme 'afternoon t))
 #+end_src
 
-**** Autosave
+** Autosave
 #+begin_src elisp
   (use-package super-save
     :ensure t
@@ -117,10 +157,8 @@ point regardless of any selection.
     (super-save-mode +1))
 #+end_src
 
-
-** Keymaps
-
-*** Core keymaps
+* Keymaps
+** Core keymaps
 These keymaps cannot be overwritten by any major mode.
 
 Create the mode map.
@@ -128,7 +166,7 @@ Create the mode map.
   (defvar core-keymaps-mode-map (make-sparse-keymap))
 #+end_src
 
-**** Buffer/file operations
+*** Buffer/file operations
 #+begin_src elisp
   (defun open-config () (interactive) (find-file "~/.emacs.d/init-org.org"))
   (define-key core-keymaps-mode-map (kbd "C-x c") 'open-config)
@@ -149,7 +187,7 @@ Switch to buffer:
   (keymap-global-set "C-b" 'switch-to-buffer)
 #+end_src
 
-**** Cursor movement
+*** Cursor movement
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "M-h") 'left-char)
   (define-key core-keymaps-mode-map (kbd "M-j") 'next-line)
@@ -157,7 +195,7 @@ Switch to buffer:
   (define-key core-keymaps-mode-map (kbd "M-l") 'right-char)
 #+end_src
 
-**** Cursor movement (large motions)
+*** Cursor movement (large motions)
 src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text. If already there, at the beginning of the line.
 #+begin_src elisp
   (defun smart-beginning-of-line ()
@@ -165,7 +203,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
     (let ((old-point (point)))
       (back-to-indentation)
       (if (= old-point (point))
-  	(beginning-of-line))))
+          (beginning-of-line))))
 
   (define-key core-keymaps-mode-map (kbd "M-H") 'smart-beginning-of-line)
   (define-key core-keymaps-mode-map (kbd "M-J") 'forward-paragraph)
@@ -174,7 +212,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "M-w") 'forward-word)
 #+end_src
 
-**** Vim-style character find (f)
+*** Vim-style character find (f)
 #+begin_src elisp
   (defun one-char-search-forward ()
     (interactive)
@@ -192,7 +230,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "M-F") 'one-char-search-backward)
 #+end_src
 
-**** New line above/below
+*** New line above/below
 #+begin_src elisp
   (defun newline-above ()
     (interactive)
@@ -210,12 +248,12 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "M-o") 'newline-below)
 #+end_src
 
-**** Scroll a half-page
+*** Scroll a half-page
 #+begin_src elisp
   (defun scroll-up-half-page ()
     (interactive)
     (scroll-up (/ (window-body-height) 2)))
-  
+
   (defun scroll-down-half-page ()
     (interactive)
     (scroll-down (/ (window-body-height) 2)))
@@ -224,13 +262,13 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "C-M-k") 'scroll-down-half-page)
 #+end_src
 
-**** Undo/Redo
+*** Undo/Redo
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-u") 'undo-only)
   (define-key core-keymaps-mode-map (kbd "C-r") 'undo-redo)
 #+end_src
 
-**** Splits
+*** Splits
 #+begin_src elisp
   (defun split-window-plus ()
     (interactive)
@@ -246,7 +284,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "M-_") 'split-window-minus)
 #+end_src
 
-**** Window commands
+*** Window commands
 #+begin_src elisp
   (define-prefix-command 'window-map)
   (define-key core-keymaps-mode-map (kbd "C-w") 'window-map)
@@ -258,7 +296,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key window-map (kbd "l") 'windmove-right)
 #+end_src
 
-**** Selection commands
+*** Selection commands
 #+begin_src elisp
   (defun select-inside-line ()
     (interactive)
@@ -275,7 +313,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key marking (kbd "p") 'mark-paragraph)
 #+end_src
 
-**** Searching
+*** Searching
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-f") 'isearch-forward)
   (define-key core-keymaps-mode-map (kbd "C-S-f") 'isearch-backward)
@@ -284,9 +322,8 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key isearch-mode-map (kbd "<escape>") 'isearch-exit)
 #+end_src
 
-**** Yank/Paste
+*** Yank/Paste
 #+begin_src elisp
-  ;; 
   (define-key core-keymaps-mode-map (kbd "C-y") 'kill-ring-save)
   (define-key core-keymaps-mode-map (kbd "C-p") 'yank)
   (define-key core-keymaps-mode-map (kbd "M-p") 'yank-pop)
@@ -307,24 +344,23 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key copying (kbd "p") 'copy-paragraph)
 #+end_src
 
-**** Misc
+*** Misc
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-j") (lambda () (interactive) (next-line) (join-line)))
 #+end_src
 
-**** Creating the core keymaps minor mode
+*** Creating the core keymaps minor mode
 #+begin_src elisp
-(define-minor-mode core-keymaps-mode
-  "All the core keymaps"
-  :keymap core-keymaps-mode-map
-  :lighter "Core"
-  :global t)
+  (define-minor-mode core-keymaps-mode
+    "All the core keymaps"
+    :keymap core-keymaps-mode-map
+    :lighter "Core"
+    :global t)
 
-(core-keymaps-mode 1)
+  (core-keymaps-mode 1)
 #+end_src
 
-
-*** icomplete
+** icomplete
 #+begin_src elisp
   (define-key icomplete-minibuffer-map (kbd "<tab>") 'icomplete-forward-completions)
   (define-key icomplete-minibuffer-map (kbd "<backtab>") 'icomplete-backward-completions)
@@ -332,7 +368,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key icomplete-minibuffer-map (kbd "C-<return>") 'icomplete-ret)
 #+end_src
 
-*** Commenting
+** Commenting
 (Un)Comments the active region if it exists. Otherwise (un)comments the current line.
 #+begin_src elisp
   (defun comment-line-or-selection ()
