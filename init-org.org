@@ -1,18 +1,18 @@
 #-*- mode: org -*-
 #+STARTUP: content
+#+PROPERTY: header-args :results none
 
 * TODO
-- make <return> work when there is no completion candidate
-- no line numbers in terminal
-- forward-word etc functions
-- go back to mark
-- org keymaps for begin's, headings etc
-- resizable fonts in org
-- better scroll-half-page
-- dired shortcuts
-- {C-<tab>} for cycling buffers + showing all buffer orders for a window in the modeline or something
-- selecting whole buffer
-
+    - forward-word etc functions
+      - go back to mark
+      - org keymaps for begin's, headings etc
+      - dired shortcuts
+      - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
+      - adding deletion shortcuts
+      - marking expressions
+      - better list bullets (from scratch)
+      - toggleable terminal
+        
 * Options & minor modes
 ** General
 *** Disabling GUI elements
@@ -95,31 +95,38 @@ point regardless of any selection.
 #+end_src
 
 ** Org-mode
-    
 *** Headings
 Give each heading a shade of grey, based on importance.
 #+begin_src elisp
   (defun set-org-heading-fonts ()
-    (set-face-attribute 'org-level-1 nil :font "DejaVu Serif-28" :weight 'semi-bold :foreground "#ffffff")
-    (set-face-attribute 'org-level-2 nil :font "DejaVu Serif-23" :weight 'semi-bold :foreground "#dddddd")
-    (set-face-attribute 'org-level-3 nil :font "DejaVu Serif-18" :weight 'semi-bold :foreground "#bbbbbb")
-    (set-face-attribute 'org-level-4 nil :font "DejaVu Serif-13" :weight 'semi-bold :foreground "#999999"))
+    (set-face-attribute 'org-level-1 nil :family "DejaVu Sans" :height 1.8 :weight 'semi-bold :foreground "#ffffff")
+    (set-face-attribute 'org-level-2 nil :family "DejaVu Sans" :height 1.6 :weight 'semi-bold :foreground "#dddddd")
+    (set-face-attribute 'org-level-3 nil :family "DejaVu Sans" :height 1.4 :weight 'semi-bold :foreground "#bbbbbb")
+    (set-face-attribute 'org-level-4 nil :family "DejaVu Sans" :height 1.2 :weight 'semi-bold :foreground "#999999"))
 #+end_src
 
+*** Heading numbers
+By default the face of the numbers inherits the face of the headline and so multiplies the font size again, which we don't want.
+We need to create a face that sets height to 1.0 so that the numbers don t get scaled up even more.
+#+begin_src elisp
+  (defface my-org-num-blank-face '((t nil)) "Heading number face")
+  (setq org-num-face 'my-org-num-blank-face)
+#+end_src
 *** Other fonts
 #+begin_src elisp
   (defun set-other-org-fonts ()
-    (set-face-attribute 'variable-pitch nil :font "DejaVu Serif-10")
-    (set-face-attribute 'org-block nil :font "SFMono Nerd Font-10")
-    (set-face-attribute 'org-meta-line nil :font "SFMono Nerd Font-8")
+    (set-face-attribute 'variable-pitch nil :family "DejaVu Sans" :height 1.0)
+    (set-face-attribute 'org-block nil :family "SFMono Nerd Font" :height 1.0)
+    (set-face-attribute 'org-meta-line nil :family "SFMono Nerd Font" :height 0.8)
     (set-face-attribute 'org-hide nil :inherit 'fixed-pitch))
 #+end_src
-
+    
 *** Indentation
 #+begin_src elisp
   (setq org-adapt-indentation t)
   (setq org-indent-indentation-per-level 2)
 #+end_src
+    
 *** Org hook
 #+begin_src elisp
   (add-hook
@@ -132,7 +139,13 @@ Give each heading a shade of grey, based on importance.
      (set-org-heading-fonts)
      (set-other-org-fonts)))
 #+end_src
-
+** Terminal
+#+begin_src elisp
+  (add-hook
+   'term-mode-hook
+   (lambda ()
+     (display-line-numbers-mode 0)))
+#+end_src
 * Plugins
 
 ** MELPA
@@ -184,7 +197,11 @@ Save buffer:
 
 Switch to buffer:
 #+begin_src elisp
-  (keymap-global-set "C-b" 'switch-to-buffer)
+  (define-key core-keymaps-mode-map (kbd "C-b") 'switch-to-buffer)
+#+end_src
+Kill buffer:
+#+begin_src elisp
+  (define-key core-keymaps-mode-map (kbd "C-S-k") 'kill-this-buffer)
 #+end_src
 
 *** Cursor movement
@@ -252,14 +269,16 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
 #+begin_src elisp
   (defun scroll-up-half-page ()
     (interactive)
-    (scroll-up (/ (window-body-height) 2)))
+    (previous-line (/ (window-body-height) 2))
+    (recenter))
 
   (defun scroll-down-half-page ()
     (interactive)
-    (scroll-down (/ (window-body-height) 2)))
+    (next-line (/ (window-body-height) 2))
+    (recenter))
 
-  (define-key core-keymaps-mode-map (kbd "C-M-j") 'scroll-up-half-page)
-  (define-key core-keymaps-mode-map (kbd "C-M-k") 'scroll-down-half-page)
+  (define-key core-keymaps-mode-map (kbd "C-M-j") 'scroll-down-half-page)
+  (define-key core-keymaps-mode-map (kbd "C-M-k") 'scroll-up-half-page)
 #+end_src
 
 *** Undo/Redo
@@ -311,6 +330,7 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key marking (kbd "w") 'mark-word)
   (define-key marking (kbd "l") 'select-inside-line)
   (define-key marking (kbd "p") 'mark-paragraph)
+  (define-key marking (kbd "a") 'mark-whole-buffer)
 #+end_src
 
 *** Searching
@@ -323,27 +343,46 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
 #+end_src
 
 *** Yank/Paste
+Core commands and prefix:
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-y") 'kill-ring-save)
   (define-key core-keymaps-mode-map (kbd "C-p") 'yank)
   (define-key core-keymaps-mode-map (kbd "M-p") 'yank-pop)
+  (define-prefix-command 'copying)
+  (define-key core-keymaps-mode-map (kbd "M-y") 'copying)
+#+end_src
 
+Copy line:
+#+begin_src elisp
   (defun copy-line ()
     (interactive)
     (select-inside-line)
     (kill-ring-save 0 0 t))
+  
+  (define-key copying (kbd "l") 'copy-line)
+#+end_src
 
+Copy paragraph:
+#+begin_src elisp
   (defun copy-paragraph ()
     (interactive)
     (mark-paragraph)
     (kill-ring-save 0 0 t))
-
-  (define-prefix-command 'copying)
-  (define-key core-keymaps-mode-map (kbd "M-y") 'copying)
-  (define-key copying (kbd "l") 'copy-line)
+  
   (define-key copying (kbd "p") 'copy-paragraph)
 #+end_src
 
+Copy whole buffer:
+#+begin_src elisp
+  (defun copy-whole-buffer ()
+    (interactive)
+    (mark-whole-buffer)
+    (kill-ring-save 0 0 t))
+
+  (define-key copying (kbd "a") 'copy-whole-buffer)
+#+end_src
+
+*** Delete
 *** Misc
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-j") (lambda () (interactive) (next-line) (join-line)))
@@ -364,8 +403,8 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
 #+begin_src elisp
   (define-key icomplete-minibuffer-map (kbd "<tab>") 'icomplete-forward-completions)
   (define-key icomplete-minibuffer-map (kbd "<backtab>") 'icomplete-backward-completions)
-  (define-key icomplete-minibuffer-map (kbd "<return>") (lambda () (interactive) (icomplete-force-complete) (icomplete-ret)))
-  (define-key icomplete-minibuffer-map (kbd "C-<return>") 'icomplete-ret)
+  (define-key icomplete-minibuffer-map (kbd "<return>") 'icomplete-force-complete-and-exit)
+  (define-key icomplete-minibuffer-map (kbd "C-<return>") 'icomplete-force-complete)
 #+end_src
 
 ** Commenting
