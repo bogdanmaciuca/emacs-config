@@ -3,16 +3,16 @@
 #+PROPERTY: header-args :results none
 
 * TODO
-    - forward-word etc functions
-      - go back to mark
-      - org keymaps for begin's, headings etc
-      - dired shortcuts
-      - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
-      - adding deletion shortcuts
-      - marking expressions
-      - better list bullets (from scratch)
-      - toggleable terminal
-        
+- forward-word etc functions
+  - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
+  - better list bullets (from scratch)
+  - toggleable terminal
+  - resizing windows
+  - moving windows around
+  - different background for code blocks
+  - marking inside "", (), [] etc
+  - repeat M-f action for last character
+
 * Options & minor modes
 ** General
 *** Disabling GUI elements
@@ -20,6 +20,7 @@
   (menu-bar-mode 0)
   (tool-bar-mode -1)
   (scroll-bar-mode 0)
+  (setq inhibit-splash-screen t)
 #+end_src
 
 *** Disable backup files
@@ -45,9 +46,9 @@
 
 *** Delete selection
 #+begin_quote
-When Delete Selection mode is enabled, typed text replaces the selection
+"When Delete Selection mode is enabled, typed text replaces the selection
 if the selection is active. Otherwise, typed text is just inserted at
-point regardless of any selection.
+point regardless of any selection."
 #+end_quote
 #+begin_src elisp
   (delete-selection-mode t)
@@ -93,8 +94,19 @@ point regardless of any selection.
                  '(:eval (my-buffer-name))))
 
 #+end_src
-
+*** Misc
+Start in fullscreen
+#+begin_src elisp
+  (add-to-list 'initial-frame-alist '(fullscreen . maximized))
+#+end_src
 ** Org-mode
+*** General options
+Disable confirmation for src block evaluation.
+#+begin_src elisp
+  (setq org-confirm-babel-evaluate nil)
+  (setq org-fontify-quote-and-verse-blocks t)
+#+end_src
+
 *** Headings
 Give each heading a shade of grey, based on importance.
 #+begin_src elisp
@@ -116,9 +128,10 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
 #+begin_src elisp
   (defun set-other-org-fonts ()
     (set-face-attribute 'variable-pitch nil :family "DejaVu Sans" :height 1.0)
-    (set-face-attribute 'org-block nil :family "SFMono Nerd Font" :height 1.0)
+    (set-face-attribute 'org-block nil :family "SFMono Nerd Font" :height 1.0 :background "#12131b")
     (set-face-attribute 'org-meta-line nil :family "SFMono Nerd Font" :height 0.8)
-    (set-face-attribute 'org-hide nil :inherit 'fixed-pitch))
+    (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-quote nil :inherit 'variable-pitch :slant 'italic))
 #+end_src
     
 *** Indentation
@@ -126,13 +139,13 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
   (setq org-adapt-indentation t)
   (setq org-indent-indentation-per-level 2)
 #+end_src
-    
 *** Org hook
 #+begin_src elisp
   (add-hook
    'org-mode-hook
    (lambda ()
      (display-line-numbers-mode 0)
+     (visual-line-mode t)
      (org-num-mode t)
      (variable-pitch-mode t)
      (org-indent-mode t)
@@ -147,7 +160,6 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
      (display-line-numbers-mode 0)))
 #+end_src
 * Plugins
-
 ** MELPA
 #+begin_src elisp
   (require 'package)
@@ -190,6 +202,15 @@ Open file:
   (define-key core-keymaps-mode-map (kbd "C-o") 'find-file)
 #+end_src
 
+Open dired:
+#+begin_src elisp
+  (defun open-dired-here ()
+    (interactive)
+    (dired "."))
+
+  (define-key core-keymaps-mode-map (kbd "C-S-o") 'open-dired-here)
+#+end_src
+
 Save buffer:
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-s") 'save-buffer)
@@ -226,7 +247,21 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
   (define-key core-keymaps-mode-map (kbd "M-J") 'forward-paragraph)
   (define-key core-keymaps-mode-map (kbd "M-K") 'backward-paragraph)
   (define-key core-keymaps-mode-map (kbd "M-L") 'end-of-line)
+#+end_src
+
+Forward/backward word with custom word delimiters:
+#+begin_src elisp
+  (defun my-forward-word ()
+    (interactive))
+  (defun my-backward-word ()
+    (interactive))
+  
   (define-key core-keymaps-mode-map (kbd "M-w") 'forward-word)
+#+end_src
+
+Push mark on forward/backward paragraph.
+#+begin_src elisp
+  (advice-add 'forward-paragraph :before (lambda (&rest _args) (push-mark nil t nil)))
 #+end_src
 
 *** Vim-style character find (f)
@@ -269,11 +304,13 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
 #+begin_src elisp
   (defun scroll-up-half-page ()
     (interactive)
+    (push-mark nil t nil)
     (previous-line (/ (window-body-height) 2))
     (recenter))
 
   (defun scroll-down-half-page ()
     (interactive)
+    (push-mark nil t nil)
     (next-line (/ (window-body-height) 2))
     (recenter))
 
@@ -323,7 +360,8 @@ src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text
     (set-mark (point))
     (beginning-of-line))
 
-  (define-key core-keymaps-mode-map (kbd "C-v") 'set-mark-command)
+  (define-key core-keymaps-mode-map (kbd "M-v") 'set-mark-command)
+  (define-key core-keymaps-mode-map (kbd "M-s") 'mark-sexp)
 
   (define-prefix-command 'marking)
   (define-key core-keymaps-mode-map (kbd "M-m") 'marking)
@@ -386,6 +424,7 @@ Copy whole buffer:
 *** Misc
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-j") (lambda () (interactive) (next-line) (join-line)))
+  (define-key core-keymaps-mode-map (kbd "C-M-o") 'pop-global-mark)  
 #+end_src
 
 *** Creating the core keymaps minor mode
@@ -417,4 +456,36 @@ Copy whole buffer:
     (comment-or-uncomment-region (region-beginning) (region-end)))
 
   (keymap-global-set "C-/" 'comment-line-or-selection)
+#+end_src
+
+** Org
+Keymaps for:
+- create source block
+- create quote
+- execute code block
+- execute buffer
+#+begin_src elisp
+  (defun insert-org-src ()
+    (interactive)
+    (org-insert-structure-template "src"))
+
+  (defun insert-org-quote ()
+    (interactive)
+    (org-insert-structure-template "quote"))
+
+  (with-eval-after-load "org"
+    (define-key org-mode-map (kbd "C-c s") 'insert-org-src)
+    (define-key org-mode-map (kbd "C-c q") 'insert-org-quote)
+    (define-key org-mode-map (kbd "C-<return>") 'org-babel-execute-src-block))
+#+end_src
+
+** Dired
+#+begin_src elisp
+  (define-key dired-mode-map (kbd "h") 'left-char)
+  (define-key dired-mode-map (kbd "j") 'next-line)
+  (define-key dired-mode-map (kbd "k") 'previous-line)
+  (define-key dired-mode-map (kbd "l") 'right-char)
+  (define-key dired-mode-map (kbd "+") 'dired-create-empty-file)
+  (define-key dired-mode-map (kbd "C-+") 'dired-create-directory)
+  (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory)
 #+end_src
