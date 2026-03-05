@@ -5,13 +5,13 @@
 * TODO
 - still asking to confirm to kill processes
 - forward-word etc functions
-  - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
-  - better list bullets (from scratch)
-  - resizing windows
-  - moving windows around
-  - marking inside "", (), [] etc
-  - repeat M-f action for last character
-
+- C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
+- better list bullets (from scratch)
+- resizing windows
+- moving windows around
+- marking inside "", (), [] etc
+- repeat M-f action for last character
+  
 * Options & minor modes
 ** General
 *** Disabling GUI elements
@@ -82,7 +82,6 @@ point regardless of any selection."
       "-"))
 
   (defun my-buffer-name ()
-    "Returns the buffer name, but with `propertize`"
     (propertize (buffer-name) 'face '(:foreground "#c397d8")))
 
   (setq-default mode-line-format
@@ -91,12 +90,17 @@ point regardless of any selection."
                  '(:eval (my-modified-status))
                  " | "
                  '(:eval (my-buffer-name))))
-
+#+end_src
+*** Dired
+#+begin_src elisp
+  (global-auto-revert-mode t) ;; Refresh automatically when FS is changed
+  (setq dired-kill-when-opening-new-dired-buffer t)
 #+end_src
 *** Misc
 Start in fullscreen
 #+begin_src elisp
   (add-to-list 'initial-frame-alist '(fullscreen . maximized))
+  (setq-default indent-tabs-mode nil)
 #+end_src
 ** Org-mode
 *** General options
@@ -127,6 +131,7 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
 #+begin_src elisp
   (defun set-other-org-fonts ()
     (set-face-attribute 'variable-pitch nil :family "DejaVu Sans" :height 1.0)
+    (set-face-attribute 'fixed-pitch nil :family "SFMono Nerd Font" :height 1.0)
     (set-face-attribute 'org-block nil :family "SFMono Nerd Font" :height 1.0 :background "#12131b")
     (set-face-attribute 'org-meta-line nil :family "SFMono Nerd Font" :height 0.8)
     (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
@@ -239,7 +244,7 @@ Kill buffer:
 #+end_src
 
 *** Cursor movement (large motions)
-src_elisp{smart-beginning-of-line} moves the cursor to the beginning of the text. If already there, at the beginning of the line.
+`smart-beginning-of-line` moves the cursor to the beginning of the text. If already there, at the beginning of the line.
 #+begin_src elisp
   (defun smart-beginning-of-line ()
     (interactive)
@@ -271,16 +276,23 @@ Push mark on forward/backward paragraph.
 
 *** Vim-style character find (f)
 #+begin_src elisp
+  (defvar char-search-dir-forward t)
+  (defvar char-search-char nil)
+
   (defun one-char-search-forward ()
     (interactive)
     (message "Waiting or a key...")
     (let ((key (read-char)))
+      (setq char-search-dir-forward t)
+      (setq char-search-char key)
       (search-forward (byte-to-string key))))
 
   (defun one-char-search-backward ()
     (interactive)
     (message "Waiting or a key...")
     (let ((key (read-char)))
+      (setq char-search-dir-forward nil)
+      (setq char-search-char key)
       (search-backward (byte-to-string key))))
 
   (define-key core-keymaps-mode-map (kbd "M-f") 'one-char-search-forward)
@@ -429,7 +441,7 @@ Copy whole buffer:
 *** Misc
 #+begin_src elisp
   (define-key core-keymaps-mode-map (kbd "C-j") (lambda () (interactive) (next-line) (join-line)))
-  (define-key core-keymaps-mode-map (kbd "C-M-o") 'pop-global-mark)  
+  (define-key core-keymaps-mode-map (kbd "C-M-o") 'pop-global-mark)
 #+end_src
 
 *** Create the core keymaps minor mode
@@ -515,6 +527,7 @@ Keymaps for:
 
 ** Dired
 #+begin_src elisp
+  (require 'dired)
   (define-key dired-mode-map (kbd "h") 'left-char)
   (define-key dired-mode-map (kbd "j") 'next-line)
   (define-key dired-mode-map (kbd "k") 'previous-line)
