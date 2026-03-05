@@ -3,6 +3,7 @@
 #+PROPERTY: header-args :results none
 
 * TODO
+- still asking to confirm to kill processes
 - forward-word etc functions
   - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
   - better list bullets (from scratch)
@@ -153,7 +154,7 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
 ** Terminal
 Don't ask before  killing active process:
 #+begin_src elisp
-  (setq confirm-kill-process nil)
+  (setq confirm-kill-processes nil)
 #+end_src
 
 Disable line numbers:
@@ -443,10 +444,11 @@ Copy whole buffer:
 #+end_src
 
 *** Toggle terminal
+Utility functions:
 #+begin_src elisp
   (defun term-exists ()
-    (when (eq (get-buffer "*terminal*") nil) nil)
-    t)
+    (interactive)
+    (if (eq (get-buffer "*terminal*") nil) nil t))
 
   (defun start-term ()
     (interactive)
@@ -455,7 +457,10 @@ Copy whole buffer:
   (defun switch-to-term ()
     (interactive)
     (switch-to-buffer "*terminal*" nil t))
+#+end_src
 
+Actual keymap:
+#+begin_src elisp
   (defun toggle-term ()
     (interactive)
     (if (eq (current-buffer) (get-buffer "*terminal*"))
@@ -464,8 +469,9 @@ Copy whole buffer:
   	(switch-to-term)
         (start-term))))
 
-  (define-key core-keymaps-mode-map (kbd "C-`") 'toggle-term)
+  (define-key core-keymaps-mode-map (kbd "C-\\") 'toggle-term)
 #+end_src
+
 ** icomplete
 #+begin_src elisp
   (define-key icomplete-minibuffer-map (kbd "<tab>") 'icomplete-forward-completions)
