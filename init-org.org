@@ -6,10 +6,8 @@
 - forward-word etc functions
   - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
   - better list bullets (from scratch)
-  - toggleable terminal
   - resizing windows
   - moving windows around
-  - different background for code blocks
   - marking inside "", (), [] etc
   - repeat M-f action for last character
 
@@ -153,6 +151,12 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
      (set-other-org-fonts)))
 #+end_src
 ** Terminal
+Don't ask before  killing active process:
+#+begin_src elisp
+  (setq confirm-kill-process nil)
+#+end_src
+
+Disable line numbers:
 #+begin_src elisp
   (add-hook
    'term-mode-hook
@@ -222,7 +226,7 @@ Switch to buffer:
 #+end_src
 Kill buffer:
 #+begin_src elisp
-  (define-key core-keymaps-mode-map (kbd "C-S-k") 'kill-this-buffer)
+  (define-key core-keymaps-mode-map (kbd "C-S-k") 'kill-current-buffer)
 #+end_src
 
 *** Cursor movement
@@ -427,7 +431,7 @@ Copy whole buffer:
   (define-key core-keymaps-mode-map (kbd "C-M-o") 'pop-global-mark)  
 #+end_src
 
-*** Creating the core keymaps minor mode
+*** Create the core keymaps minor mode
 #+begin_src elisp
   (define-minor-mode core-keymaps-mode
     "All the core keymaps"
@@ -438,6 +442,30 @@ Copy whole buffer:
   (core-keymaps-mode 1)
 #+end_src
 
+*** Toggle terminal
+#+begin_src elisp
+  (defun term-exists ()
+    (when (eq (get-buffer "*terminal*") nil) nil)
+    t)
+
+  (defun start-term ()
+    (interactive)
+    (term "/usr/bin/zsh"))
+
+  (defun switch-to-term ()
+    (interactive)
+    (switch-to-buffer "*terminal*" nil t))
+
+  (defun toggle-term ()
+    (interactive)
+    (if (eq (current-buffer) (get-buffer "*terminal*"))
+        (switch-to-buffer nil nil t)
+      (if (term-exists)
+  	(switch-to-term)
+        (start-term))))
+
+  (define-key core-keymaps-mode-map (kbd "C-`") 'toggle-term)
+#+end_src
 ** icomplete
 #+begin_src elisp
   (define-key icomplete-minibuffer-map (kbd "<tab>") 'icomplete-forward-completions)
