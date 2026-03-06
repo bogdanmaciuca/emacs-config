@@ -6,7 +6,6 @@
 - still asking to confirm to kill processes
 - forward-word etc functions
 - C-<tab> for cycling buffers + showing all buffer orders for a window in the modeline or something
-- better list bullets (from scratch)
 - resizing windows
 - moving windows around
 - marking inside "", (), [] etc
@@ -107,7 +106,17 @@ Start in fullscreen
 Disable confirmation for src block evaluation.
 #+begin_src elisp
   (setq org-confirm-babel-evaluate nil)
-  (setq org-fontify-quote-and-verse-blocks t)
+#+end_src
+Allow chaning the font face for quotes.
+#+begin_src elisp
+  (setq org-fontify-quote-and-verse-blocks t)  
+#+end_src
+Use bullets for lists.
+#+begin_src elisp
+(font-lock-add-keywords
+ 'org-mode
+ '(("^ *\\([-]\\) "
+    (0 (prog1() (compose-region (match-beginning 1) (match-end 1) "•"))))))
 #+end_src
 
 *** Headings
@@ -119,7 +128,17 @@ Give each heading a shade of grey, based on importance.
     (set-face-attribute 'org-level-3 nil :family "DejaVu Sans" :height 1.4 :weight 'semi-bold :foreground "#bbbbbb")
     (set-face-attribute 'org-level-4 nil :family "DejaVu Sans" :height 1.2 :weight 'semi-bold :foreground "#999999"))
 #+end_src
-
+Replace ellipsis with single point.
+#+begin_src elisp
+  (setq org-ellipsis " ·")
+#+end_src
+Hide last asterisk before.
+#+begin_src elisp  
+(font-lock-add-keywords
+ 'org-mode
+ '(("^\\**\\(\\*\\) "
+    (0 (prog1() (compose-region (match-beginning 1) (match-end 1) " "))))))
+#+end_src
 *** Heading numbers
 By default the face of the numbers inherits the face of the headline and so multiplies the font size again, which we don't want.
 We need to create a face that sets height to 1.0 so that the numbers don t get scaled up even more.
@@ -134,7 +153,8 @@ We need to create a face that sets height to 1.0 so that the numbers don t get s
     (set-face-attribute 'fixed-pitch nil :family "SFMono Nerd Font" :height 1.0)
     (set-face-attribute 'org-block nil :family "SFMono Nerd Font" :height 1.0 :background "#12131b")
     (set-face-attribute 'org-meta-line nil :family "SFMono Nerd Font" :height 0.8)
-    (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-hide nil
+ :inherit 'fixed-pitch)
     (set-face-attribute 'org-quote nil :inherit 'variable-pitch :slant 'italic))
 #+end_src
     
@@ -490,6 +510,7 @@ Actual keymap:
   (define-key icomplete-minibuffer-map (kbd "<backtab>") 'icomplete-backward-completions)
   (define-key icomplete-minibuffer-map (kbd "<return>") 'icomplete-force-complete-and-exit)
   (define-key icomplete-minibuffer-map (kbd "C-<return>") 'icomplete-force-complete)
+  (define-key icomplete-minibuffer-map (kbd "S-<return>") 'icomplete-ret)
 #+end_src
 
 ** Commenting
